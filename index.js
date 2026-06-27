@@ -59,7 +59,11 @@ const sock = makeWASocket({
       console.log(`[${sender}] ${text}`);
 
       // Simpan ke memory
-      memory.save(sender, text);
+   memory.save(sender, text, "user");
+
+const aiReply = await askAI(text);
+
+memory.save(sender, aiReply, "assistant");
 
       // Perintah khusus
       if (text.toLowerCase() === ".joke") {
