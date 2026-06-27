@@ -1,88 +1,81 @@
 require("dotenv").config();
 
 const {
-default: makeWASocket,
-useMultiFileAuthState,
-DisconnectReason
+  default: makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason
 } = require("@whiskeysockets/baileys");
 
 const P = require("pino");
-
 const askAI = require("./ai");
 const { randomJoke } = require("./jokes");
 const memory = require("./memory");
 
 async function startBot() {
-const { state, saveCreds } = await useMultiFileAuthState("./session");
+  const { state, saveCreds } = await useMultiFileAuthState("./session");
 
-const sock = makeWASocket({
-auth: state,
-logger: P({ level: "silent" })
-});
+  const sock = makeWASocket({
+    auth: state,
+    logger: P({ level: "silent" })
+  });
 
-sock.ev.on("creds.update", saveCreds);
+  sock.ev.on("creds.update", saveCreds);
 
-sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
-if (connection === "close") {
-const shouldReconnect =
-lastDisconnect?.error?.output?.statusCode !==
-DisconnectReason.loggedOut;
+  sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
+    if (connection === "close") {
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !==
+        DisconnectReason.loggedOut;
 
-```
-  console.log("❌ Koneksi terputus");
+      console.log("❌ Koneksi terputus");
 
-  if (shouldReconnect) {
-    startBot();
-  }
-}
+      if (shouldReconnect) {
+        startBot();
+      }
+    }
 
-if (connection === "open") {
-  console.log("✅ KocakAi berhasil terhubung!");
-}
-```
+    if (connection === "open") {
+      console.log("✅ KocakAi berhasil terhubung!");
+    }
+  });
 
-});
+  sock.ev.on("messages.upsert", async ({ messages }) => {
+    const msg = messages[0];
 
-sock.ev.on("messages.upsert", async ({ messages }) => {
-const msg = messages[0];
+    try {
+      if (!msg?.message) return;
+      if (msg.key.fromMe) return;
 
-```
-try {
-  if (!msg?.message) return;
-  if (msg.key.fromMe) return;
+      const text =
+        msg.message.conversation ||
+        msg.message.extendedTextMessage?.text ||
+        "";
 
-  const text =
-    msg.message.conversation ||
-    msg.message.extendedTextMessage?.text ||
-    "";
+      if (!text) return;
 
-  if (!text) return;
+      const sender = msg.key.remoteJid;
 
-  const sender = msg.key.remoteJid;
+      console.log(`[${sender}] ${text}`);
 
-  console.log(`[${sender}] ${text}`);
+      memory.save(sender, text, "user");
 
-  memory.save(sender, text, "user");
+      if (text.toLowerCase() === ".joke") {
+        return await sock.sendMessage(sender, {
+          text: `🤣 ${randomJoke()}`
+        });
+      }
 
-  if (text.toLowerCase() === ".joke") {
-    return await sock.sendMessage(sender, {
-      text: `🤣 ${randomJoke()}`
-    });
-  }
+      if (text.toLowerCase() === ".ping") {
+        return await sock.sendMessage(sender, {
+          text: "🏓 Pong! KocakAi aktif."
+        });
+      }
 
-  if (text.toLowerCase() === ".ping") {
-    return await sock.sendMessage(sender, {
-      text: "🏓 Pong! KocakAi aktif."
-    });
-  }
+      const aiReply = await askAI(text);
 
-  const aiReply = await askAI(text);
+      memory.save(sender, aiReply, "assistant");
 
-  memory.save(sender, aiReply, "assistant");
-
-  const finalReply = `
-```
-
+      const finalReply = `
 ${aiReply}
 
 🤣 Joke Acak:
@@ -93,23 +86,20 @@ ${randomJoke()}
 Created By Muhammad Sulaiman
 `;
 
-```
-  await sock.sendMessage(sender, {
-    text: finalReply.trim()
+      await sock.sendMessage(sender, {
+        text: finalReply.trim()
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      if (msg?.key?.remoteJid) {
+        await sock.sendMessage(msg.key.remoteJid, {
+          text: "🤪 Waduh otak KocakAi lagi tersandung kabel internet."
+        });
+      }
+    }
   });
-
-} catch (err) {
-  console.error(err);
-
-  if (msg?.key?.remoteJid) {
-    await sock.sendMessage(msg.key.remoteJid, {
-      text: "🤪 Waduh otak KocakAi lagi tersandung kabel internet."
-    });
-  }
-}
-```
-
-});
 }
 
 startBot();
