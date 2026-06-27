@@ -95,16 +95,15 @@ Created By Muhammad Sulaiman
         text: finalReply.trim()
       });
 
-    } catch (err) {
-      console.error(err);
+    catch (err) {
+  console.error(err);
 
-      await sock.sendMessage(
-        messages[0].key.remoteJid,
-        {
-          text: "🤪 Waduh otak KocakAi lagi tersandung kabel internet."
-        }
-      );
-    }
+  if (msg?.key?.remoteJid) {
+    await sock.sendMessage(msg.key.remoteJid, {
+      text: "🤪 Waduh otak KocakAi lagi tersandung kabel internet."
+    });
+  }
+}
   });
 }
 
