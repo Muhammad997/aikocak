@@ -14,11 +14,12 @@ async function startBot() {
   const { state, saveCreds } =
     await useMultiFileAuthState("./session");
 
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true
-  });
+  const P = require("pino");
 
+const sock = makeWASocket({
+  auth: state,
+  logger: P({ level: "silent" })
+});
   sock.ev.on("creds.update", saveCreds);
 
   sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
