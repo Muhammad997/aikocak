@@ -86,7 +86,7 @@ ${randomJoke()}
 Created By Muhammad Sulaiman
 `;
 
-      await sock.sendMessage(sender, {
+            await sock.sendMessage(sender, {
         text: finalReply.trim()
       });
 
