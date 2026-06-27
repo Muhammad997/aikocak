@@ -61,25 +61,24 @@ const sock = makeWASocket({
       // Simpan ke memory
    memory.save(sender, text, "user");
 
+// Perintah khusus
+if (text.toLowerCase() === ".joke") {
+  return await sock.sendMessage(sender, {
+    text: `🤣 ${randomJoke()}`
+  });
+}
+
+if (text.toLowerCase() === ".ping") {
+  return await sock.sendMessage(sender, {
+    text: "🏓 Pong! KocakAi aktif."
+  });
+}
+
+// Tanya AI (cukup sekali)
 const aiReply = await askAI(text);
 
+// Simpan jawaban AI
 memory.save(sender, aiReply, "assistant");
-
-      // Perintah khusus
-      if (text.toLowerCase() === ".joke") {
-        return await sock.sendMessage(sender, {
-          text: `🤣 ${randomJoke()}`
-        });
-      }
-
-      if (text.toLowerCase() === ".ping") {
-        return await sock.sendMessage(sender, {
-          text: "🏓 Pong! KocakAi aktif."
-        });
-      }
-
-      // Tanya AI
-      const aiReply = await askAI(text);
 
       const finalReply = `
 ${aiReply}
